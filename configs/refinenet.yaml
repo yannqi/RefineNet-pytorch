@@ -1,0 +1,32 @@
+#------------DATASET CONFIG-------------
+DATASET:
+    NAME: "coco"
+    MEAN: [0.485, 0.456, 0.406]
+    STD: [0.229, 0.224, 0.225]
+    NUM_CLASSES: 21  # COCO has 80 classes + 1 background, but we use the VOC classes
+    DATASET_DIR: "/data/yangqi/dataset/COCO/"
+    BASE_SIZE: 512
+    CROP_SIZE: 512
+#-------------TRAIN CONFIG--------------
+TRAIN:
+    EPOCHS: 200
+    BATCH_SIZE: 4
+    NUM_WORKERS: 8
+    BACKBONE_PRETRAINED_PATH: "/workspace/pretrained_models/mobilenet-convert-from-torchvision.pth"
+TEST:
+    BATCH_SIZE: 8
+    NUM_WORKERS: 8
+SOLVER:
+    LR: 0.000001  
+
+MODEL:
+    MODEL_NAME: "RefineNet"
+    BACKBONE: "mobilenet_v2"
+    OUTPUT_STRIDE: 16
+    DEEPLABV3_PLUS:
+        USE_ASPP: False
+        ENABLE_DECODER: False
+
+        
+OUTPUT_DIR: "/home/yangqi/workspace/research_work/image_segmentation/RefineNet_Yann/outputs/COCO_refinenet"
+COCO_MODEL_PATH: None
