@@ -1,7 +1,7 @@
 #exmaple: 1 node,  2 GPUs per node (2GPUs)
 
-CUDA_VISIBLE_DEVICES=0,1 torchrun \
-    --nproc_per_node=2 \
+CUDA_VISIBLE_DEVICES=0,1,2 torchrun \
+    --nproc_per_node=3 \
     --nnodes=1 \
     --node_rank=0 \
     --master_addr=localhost \

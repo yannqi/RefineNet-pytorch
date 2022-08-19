@@ -1,13 +1,8 @@
-from torch.autograd import Variable
 import torch
 import time
 import torch.nn as nn 
-from apex import amp
 
-
-
-
-def train_loop(model, criterion, scaler, epoch, optim, train_dataloader, num_data, args,log):
+def train_loop(model, criterion, scaler, epoch, optim, train_dataloader, args,log):
     """Traditional dataloader style."""
     total_loss = 0
     step_start = time.time()
@@ -17,7 +12,6 @@ def train_loop(model, criterion, scaler, epoch, optim, train_dataloader, num_dat
         image_var = torch.autograd.Variable(image).float()
         target_var = torch.autograd.Variable(target).long()
 
-    
         with torch.cuda.amp.autocast(enabled=args.amp):  # Automatic Mixed Precision
             
             prediction = model(image_var)
@@ -27,8 +21,6 @@ def train_loop(model, criterion, scaler, epoch, optim, train_dataloader, num_dat
             loss = criterion(prediction,target_var)
             total_loss += loss
        
-            
-
         if args.warmup is not None:
             warmup(optim, args.warmup, epoch, n_batch, args.learning_rate)
             
@@ -46,9 +38,9 @@ def train_loop(model, criterion, scaler, epoch, optim, train_dataloader, num_dat
             
             if args.local_rank == 0:
                 log.logger.info('-TRAINED: {0:10d}/{1} \n - USED: {2} s \n- loss: {3:.4f}  - mean loss: {4:.4f}'
-                .format((n_batch + 1) * args.batch_size,
-                        num_data, use_time,loss,mean_loss))
-    mean_loss =  total_loss/num_data  
+                .format((n_batch + 1) ,
+                        len(train_dataloader), use_time,loss,mean_loss))
+    mean_loss =  total_loss/len(train_dataloader)
     if args.local_rank == 0:   
         log.logger.info('Epoch: %s, loss: %s',epoch, mean_loss.item())
     return mean_loss
@@ -66,8 +58,8 @@ def load_checkpoint(model, checkpoint):
     """Load model from checkpoint."""
     
     print("loading model checkpoint", checkpoint)
-    od = torch.load(checkpoint)
-
+    od = torch.load(checkpoint, map_location=torch.device('cpu'))
+    
     # remove proceeding 'N.' from checkpoint that comes from DDP wrapper
     saved_model = od["model"]
     model.load_state_dict(saved_model)

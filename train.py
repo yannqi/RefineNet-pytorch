@@ -25,12 +25,12 @@ def main():
                         help='The model name')
     parser.add_argument('--model_config', default='configs/refinenet.yaml', 
                         metavar='FILE', help='path to model cfg file', type=str,)
-    parser.add_argument('--data_config', default='configs/coco.yaml', 
+    parser.add_argument('--data_config', default='configs/coco_21class.yaml', 
                         metavar='FILE', help='path to data cfg file', type=str,)
-    parser.add_argument('--device_gpu', default='0', type=str,
+    parser.add_argument('--device_gpu', default='0,1,2', type=str,
                         help='Cuda device, i.e. 0 or 0,1,2,3')
     parser.add_argument('--save_step', default=20, type=int, help='Save checkpoint every save_step')
-    parser.add_argument('--checkpoint', default=None, help='The checkpoint path')
+    parser.add_argument('--checkpoint', default='checkpoints/num_classes21/refinenet101_voc.pth', help='The checkpoint path')
 
 
     parser.add_argument('--save', type=str, default='checkpoints',
@@ -50,7 +50,7 @@ def main():
                         help='momentum argument for SGD optimizer')
     parser.add_argument('--weight_decay', '--wd', type=float, default=5e-4,
                         help='weight-decay for SGD optimizer')
-    parser.add_argument('--batch_size', '--bs', type=int, default=12,
+    parser.add_argument('--batch_size', '--bs', type=int, default=12, 
                         help='number of examples for each iteration')
     parser.add_argument('--num_workers', type=int, default=8) 
     
@@ -61,7 +61,7 @@ def main():
                              ' backbone model declared with the --backbone argument.'
                              ' When it is not provided, pretrained model from torchvision'
                              ' will be downloaded.')
-    parser.add_argument('--report-period', type=int, default=5, help='Report the loss every X times.')
+    parser.add_argument('--report-period', type=int, default=800, help='Report the loss every X times.')
     
     parser.add_argument('--save-period', type=int, default=5, help='Save checkpoint every x epochs (disabled if < 1)')
     
@@ -116,7 +116,7 @@ def main():
 
  
     #Logger
-    log_path = '{}-{}-lr-{}-{}'.format(args.model_name, data_cfg.NAME, args.lr, time.strftime('%Y%m%d-%H'))
+    log_path = '{}-{}-lr-{}-{}'.format(args.model_name, data_cfg.NUM_CLASSES, args.lr, time.strftime('%Y%m%d-%H'))
     
     log = Logger('logs/'+log_path+'.log',level='debug')
     
@@ -145,22 +145,28 @@ def main():
     #Load Model 
     if args.backbone == 'resnet101' :
         net = rf101(num_classes=args.data.NUM_CLASSES, pretrained=True)
+            
     else : raise NameError('等待更新')
+    net = net.cuda()
+    if args.multi_gpu:
+        # DistributedDataParallel
+        net = DDP(net, device_ids=[args.local_rank], output_device=args.local_rank)
+
+    #TODO temp:
+    saved_model = torch.load(args.checkpoint, map_location=torch.device('cpu'))
+    net.module.load_state_dict(saved_model)
+    #---------Below is temp----------
     
-    if args.checkpoint is not None:
-        if os.path.isfile(args.checkpoint):
-            load_checkpoint(net.module if args.multi_gpu else net, args.checkpoint)
-            checkpoint = torch.load(args.checkpoint,
-                                    map_location=lambda storage, loc: storage.cuda(torch.cuda.current_device()))
-            start_epoch = checkpoint['epoch']
-            scheduler.load_state_dict(checkpoint['scheduler'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-        else:
-            print('Provided checkpoint is not path to a file')
-            return
+    # if args.checkpoint is not None:
+    #     if os.path.isfile(args.checkpoint):
+            
+    #         load_checkpoint(net.module if args.multi_gpu else net, args.checkpoint)
+    #     else:
+    #         print('Provided checkpoint is not path to a file')
+    #         return
     
 
-    
+    #Load optimizer
 
     #optimizer = torch.optim.Adam(net.parameters(), lr=args.lr)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',factor=0.5, patience=4, verbose=True)
@@ -170,25 +176,26 @@ def main():
     scheduler = MultiStepLR(optimizer=optimizer, milestones=args.multistep, gamma=0.1)
     criterion = Segmentation_Loss()
     
-    net = net.cuda()
+
     criterion.cuda()
 
-    if args.multi_gpu:
-        # DistributedDataParallel
-        net = DDP(net, device_ids=[args.local_rank], output_device=args.local_rank)
+
+
+
+
 
     #  train
-    num_data = train_dataset.__len__()
+     
     total_time = 0
     if args.local_rank == 0:
-        log.logger.info("'Train on {} samples".format(num_data))
+        log.logger.info("'Train on {} samples".format(train_dataset.__len__()))
     
     scaler = torch.cuda.amp.GradScaler(enabled=args.amp)  # Automatic Mixed Precision
     for epoch in range(args.epochs):
         if args.multi_gpu :
             train_dataloader.sampler.set_epoch(epoch)
         start_epoch_time = time.time()
-        train_loop(net,criterion,scaler,epoch,optimizer,train_dataloader,num_data,args,log)
+        train_loop(net,criterion,scaler,epoch,optimizer,train_dataloader,args,log)
         scheduler.step()
         end_epoch_time = time.time() - start_epoch_time
         total_time += end_epoch_time
@@ -198,14 +205,12 @@ def main():
         
         if epoch % args.save_period == 0 and args.local_rank == 0 :
             print("saving model...")
-            obj = {'epoch': epoch + 1,
-                   'optimizer': optimizer.state_dict(),
-                   'scheduler': scheduler.state_dict()}
+            obj = {}
             if args.multi_gpu:
                 obj['model'] = net.module.state_dict()
             else:
                 obj['model'] = net.state_dict()
-            save_path = os.path.join(args.save, f'epoch_{epoch}.pt')
+            save_path = os.path.join(args.save,  f'Class_{args.data.NUM_CLASSES}_epoch_{epoch}.pt')
             torch.save(obj, save_path)
             log.logger.info('model path:', save_path)
     if args.local_rank == 0:

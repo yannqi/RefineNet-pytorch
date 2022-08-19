@@ -27,10 +27,16 @@ class_names = ('__background__',
                 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
                 'refrigerator', 'book', 'clock', 'vase', 'scissors',
                 'teddy bear', 'hair drier', 'toothbrush')
-# Equal to VOC classes 
-NUM_CLASSES = 21
-CAT_LIST = [0, 5, 2, 16, 9, 44, 6, 3, 17, 62, 21, 67, 18, 19, 4,
-    1, 64, 20, 63, 7, 72]
+def get_label_map(label_file):
+    """Get the label map from label name to index."""
+    label_map = {}
+    labels = open(label_file,'r')
+    for line in labels:
+        ids = line.split(',')
+        label_map[int(ids[0])] = int(ids[1])
+    return label_map
+
+
 class COCOSegmentation(Dataset):
 
 
@@ -95,8 +101,8 @@ class COCOSegmentation(Dataset):
             rle = coco_mask.frPyObjects(instance['segmentation'], h, w)
             m = coco_mask.decode(rle)
             cat = instance['category_id']
-            if cat in CAT_LIST:
-                c = CAT_LIST.index(cat)
+            if cat in self.args.data.MAP_LIST:
+                c = self.args.data.MAP_LIST.index(cat) + 1  #!!!! Forget + 1, all trains are vain!!!!
             else:
                 continue
             if len(m.shape) < 3:
@@ -116,14 +122,14 @@ class COCOSegmentation(Dataset):
         return composed_transforms(sample)
 
     def _transform_val(self, sample):
-
+        ori_size = sample['image'].size
         composed_transforms = transforms.Compose([
             
             tr.FixScaleCrop(crop_size = self.args.data.CROP_SIZE),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
 
-        return composed_transforms(sample)
+        return composed_transforms(sample), ori_size
 
 
     def __len__(self):
