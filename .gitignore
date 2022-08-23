@@ -34,7 +34,7 @@ MANIFEST
 
 # Installer logs
 *.log
-
+*.log.
 # Unit test / coverage reports
 htmlcov/
 .tox/

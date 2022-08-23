@@ -85,13 +85,17 @@ git clone https://github.com/yannqi/RefineNet-pytorch.git
 Wait to update!
 
 ### Results
-Wait to update!
+
 According to this page, https://pytorch.org/hub/pytorch_vision_fcn_resnet101/, I find they train the model on the COCO dataset only on the 20 categories that are present in the Pascal VOC dataset. So I train the same categories.+
 
 
 Model summary: 381 layers, 118052437 parameters, 118052437 gradients
 FLOPs: 263.097G Params: 118.052M
 FLOPs:263097106432.00, Params: 118052437.00
+
+MIoU is: 0.714356010022485. 
+
+Checkpoint: Wait to update!
 
 <!-- ```
  Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.250

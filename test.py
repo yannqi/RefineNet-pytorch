@@ -21,11 +21,11 @@ def main():
                         help='The model name')
     parser.add_argument('--model_config', default='configs/refinenet.yaml', 
                         metavar='FILE', help='path to model cfg file', type=str,)
-    parser.add_argument('--data_config', default='configs/coco_81class.yaml', 
+    parser.add_argument('--data_config', default='configs/coco_21class.yaml', 
                         metavar='FILE', help='path to data cfg file', type=str,)
-    parser.add_argument('--device_gpu', default='1', type=str,
+    parser.add_argument('--device_gpu', default='4', type=str,
                         help='Cuda device, i.e. 0 or 0,1,2,3')
-    parser.add_argument('--checkpoint', default='checkpoints/Class_81_epoch_30.pt', help='The checkpoint path')
+    parser.add_argument('--checkpoint', default='checkpoints/Class_21_epoch_95.pt', help='The checkpoint path')
 
     # Hyperparameters
     parser.add_argument('--batch_size', '--bs', type=int, default=10,
