@@ -23,8 +23,6 @@ def main():
     parser = argparse.ArgumentParser(description='RefineNet Training With PyTorch')
     parser.add_argument('--model_name', default='RefineNet', type=str,
                         help='The model name')
-    parser.add_argument('--model_config', default='configs/refinenet.yaml', 
-                        metavar='FILE', help='path to model cfg file', type=str,)
     parser.add_argument('--data_config', default='configs/coco_21class.yaml', 
                         metavar='FILE', help='path to data cfg file', type=str,)
     parser.add_argument('--device_gpu', default='0,1,2', type=str,
@@ -62,9 +60,7 @@ def main():
                              ' When it is not provided, pretrained model from torchvision'
                              ' will be downloaded.')
     parser.add_argument('--report-period', type=int, default=800, help='Report the loss every X times.')
-    
-    parser.add_argument('--save-period', type=int, default=5, help='Save checkpoint every x epochs (disabled if < 1)')
-    
+    parser.add_argument('--save-period', type=int, default=5, help='Save checkpoint every x epochs (disabled if < 1)')  
     # Multi Gpu
     parser.add_argument('--multi_gpu', default=False, type=bool,
                         help='Whether to use multi gpu to train the model, if use multi gpu, please use by sh.')
@@ -85,10 +81,6 @@ def main():
     data_cfg = edict(data_cfg) 
     args.data = data_cfg
     
-    cfg_path = open(args.model_config)
-    cfg = yaml.full_load(cfg_path)
-    cfg = edict(cfg) 
-    args.model = cfg
     #Random seed
     np.random.seed(args.seed)
     cudnn.benchmark = True
