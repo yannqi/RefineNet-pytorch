@@ -8,7 +8,7 @@ import torch
 
 import numpy as np
 
-
+import torch.utils.model_zoo as model_zoo
 from model.utils.layer_factory import conv1x1, conv3x3, CRPBlock, RCUBlock
 
 data_info = {
@@ -217,8 +217,29 @@ class RefineNet(nn.Module):
         return out
 
 
+model_urls = {
+    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
+    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
+    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
+    'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
+    'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+}
+
 def rf101(num_classes, imagenet=False, pretrained=True, **kwargs):
     #layers = [3,4,23,3]  # resnet_101
     model = RefineNet(Bottleneck, [3, 4, 23, 3], num_classes=num_classes, **kwargs)
    
     return model
+
+def rf50(num_classes, imagenet=False, pretrained=True, **kwargs):
+    #layers = [3,4,6,3]  # resnet_50
+    model = RefineNet(Bottleneck, [3, 4, 6, 3], num_classes=num_classes, **kwargs)
+    
+    if pretrained:
+        old_dict = model_zoo.load_url(model_urls['resnet50'])
+        model_dict = model.state_dict()
+        old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
+        model_dict.update(old_dict)
+        model.load_state_dict(model_dict)
+    return model
+   

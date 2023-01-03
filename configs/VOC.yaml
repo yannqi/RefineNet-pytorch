@@ -1,0 +1,36 @@
+#------------DATASET CONFIG-------------
+# Link: https://github.com/open-mmlab/mmsegmentation/blob/master/configs/_base_/datasets/pascal_voc12.py
+NAME: "VOC"
+DATASET_PATH : '/home/yangqi/dataspace/VOCdevkit/VOC2012'  
+MEAN: [0.485, 0.456, 0.406]
+STD: [0.229, 0.224, 0.225]
+NUM_CLASSES: 21  # Num classes = objects + background
+
+
+# 'train': 1464,
+# 'trainval': 2913,
+# 'val': 1449,
+# SBD_Aug dataset: 'trainaug': 10582,
+
+#  airplane
+#  bicycle
+#  bird
+#  boat
+#  bottle
+#  bus
+#  car
+#  cat
+#  chair
+#  cow
+#  dining table
+#  dog
+#  horse
+#  motorcycle
+#  person
+#  potted plant
+#  sheep
+#  couch
+#  train
+#  tv
+
+

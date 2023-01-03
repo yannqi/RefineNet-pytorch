@@ -6,13 +6,23 @@ import numpy as np
 import torch
 import yaml
 
-from data.coco import COCOSegmentation
+from data.datasets.coco import COCOSegmentation
 
 from model.evaluate import evaluate
 from model.refinenet import rf101
-from model.utils.train_utils import load_checkpoint
+#from utils.model_load_save import load_checkpoint
 from utils.Logger import Logger
-from utils.multi_gpu import init_distributed_mode
+import utils.base_utils as base_utils
+
+def load_checkpoint(model, checkpoint):
+    """Load model from checkpoint."""
+    
+    print("loading model checkpoint", checkpoint)
+    od = torch.load(checkpoint, map_location=torch.device('cpu'))
+    
+    # remove proceeding 'N.' from checkpoint that comes from DDP wrapper
+    saved_model = od["model"]
+    model.load_state_dict(saved_model)
 
 # https://github.com/NVIDIA/DeepLearningExamples/tree/master/PyTorch/Detection/SSD
 def main():
@@ -25,7 +35,7 @@ def main():
                         metavar='FILE', help='path to data cfg file', type=str,)
     parser.add_argument('--device_gpu', default='4', type=str,
                         help='Cuda device, i.e. 0 or 0,1,2,3')
-    parser.add_argument('--checkpoint', default='checkpoints/Class_21_epoch_95.pt', help='The checkpoint path')
+    parser.add_argument('--checkpoint', default="checkpoints/Class_21_epoch_90.pt", help='The checkpoint path')
 
     # Hyperparameters
     parser.add_argument('--batch_size', '--bs', type=int, default=10,
@@ -60,7 +70,7 @@ def main():
     # Initialize Multi GPU 
 
     if args.multi_gpu == True :
-        init_distributed_mode(args)
+        base_utils.init_distributed_mode(args)
     else: 
         # Use Single Gpu
         os.environ['CUDA_VISIBLE_DEVICES'] = args.device_gpu
@@ -117,7 +127,7 @@ def main():
     if args.checkpoint is not None:
         if os.path.isfile(args.checkpoint):
             load_checkpoint(net.module if args.multi_gpu else net, args.checkpoint)
-
+            #model, _, _, start_epoch = load_checkpoint(args, net, None, None, args.checkpoint)
         else:
             print('Provided checkpoint is not path to a file')
             return

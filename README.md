@@ -83,6 +83,7 @@ git clone https://github.com/yannqi/RefineNet-pytorch.git
 ### Checkpoint Download
 
 Wait to update!
+Download from here: https://github.com/DrSleep/refinenet-pytorch/blob/master/models/resnet.py
 
 ### Results
 

@@ -1,11 +1,11 @@
 import torch
 import time
 import torch.nn as nn 
-
-def train_loop(model, criterion, scaler, epoch, optim, train_dataloader, args,log):
+from utils.base_utils import  AverageMeter
+def train_loop(train_dataloader, model, criterion, optimizer, log, args, epoch,scaler):
     """Traditional dataloader style."""
-    total_loss = 0
-    step_start = time.time()
+    model.train()
+    losses = AverageMeter()
     for n_batch, sample in enumerate(train_dataloader):
         image = sample["image"].cuda()
         target = sample['label'].cuda()
@@ -17,33 +17,24 @@ def train_loop(model, criterion, scaler, epoch, optim, train_dataloader, args,lo
             prediction = model(image_var)
             prediction = nn.functional.interpolate(
             prediction, size=target_var.size()[1:], mode="bilinear", align_corners=False)
-            
             loss = criterion(prediction,target_var)
-            total_loss += loss
-       
+            
         if args.warmup is not None:
-            warmup(optim, args.warmup, epoch, n_batch, args.learning_rate)
+            warmup(optimizer, args.warmup, epoch, n_batch, args.learning_rate)
             
          # scaler Automatic Mixed Precision
         scaler.scale(loss).backward()
-        scaler.step(optim)
+        scaler.step(optimizer)
         scaler.update()
-        optim.zero_grad()
-        
-        if n_batch % args.report_period == 0 :  
-            step_stop = time.time()
-            use_time = int(step_stop - step_start)
-            mean_loss =  total_loss/n_batch
-            step_start = time.time()
-            
-            if args.local_rank == 0:
-                log.logger.info('-TRAINED: {0:10d}/{1} \n - USED: {2} s \n- loss: {3:.4f}  - mean loss: {4:.4f}'
-                .format((n_batch + 1) ,
-                        len(train_dataloader), use_time,loss,mean_loss))
-    mean_loss =  total_loss/len(train_dataloader)
-    if args.local_rank == 0:   
-        log.logger.info('Epoch: %s, loss: %s',epoch, mean_loss.item())
-    return mean_loss
+        optimizer.zero_grad()
+        losses.update(loss.item(), image.size(0))
+        if args.local_rank == 0 and n_batch % args.report_period == 0:
+            log.logger.info(
+                "epoch: %d , iter: %d/%d , ,loss: %.4f"
+                % (epoch + 1, n_batch + 1, len(train_dataloader), loss.item())
+            )    
+    
+    return losses.avg
 
 
 
@@ -54,15 +45,7 @@ def warmup(optim, warmup_iters, epoch, n_batch, base_lr):
             param_group['lr'] = new_lr
 
 
-def load_checkpoint(model, checkpoint):
-    """Load model from checkpoint."""
-    
-    print("loading model checkpoint", checkpoint)
-    od = torch.load(checkpoint, map_location=torch.device('cpu'))
-    
-    # remove proceeding 'N.' from checkpoint that comes from DDP wrapper
-    saved_model = od["model"]
-    model.load_state_dict(saved_model)
+
 
 
 def tencent_trick(model):

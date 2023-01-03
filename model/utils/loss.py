@@ -5,8 +5,8 @@ class Segmentation_Loss(nn.Module):
         super().__init__()
         self.layer1=nn.LogSoftmax(dim=1)
         #self.layer = nn.Softmax(dim=1)
-        self.loss = nn.NLLLoss(ignore_index=-1)#size_average=False
-        self.loss1 = nn.CrossEntropyLoss(ignore_index=-1)
+        self.loss = nn.NLLLoss(ignore_index=255)#size_average=False
+        self.loss1 = nn.CrossEntropyLoss(ignore_index=255)
     def forward(self, seg_predict, seg_target):
         """To compute the semantic segmentation loss.
 

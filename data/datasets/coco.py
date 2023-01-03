@@ -45,7 +45,7 @@ class COCOSegmentation(Dataset):
         self.split = split
         self.coco = COCO("{}/annotations/instances_{}{}.json".format(dataset_dir, split,2017))
         self.image_dir = "{}/images/{}{}".format(dataset_dir,split,2017)
-        ids_file = os.path.join('data/coco/{}_ids_{}.pth'.format(split,2017))
+        ids_file = os.path.join('data/datasets/coco/{}_ids_{}.pth'.format(split,2017))
         self.coco_mask = mask
         if os.path.exists(ids_file):
             self.ids = torch.load(ids_file)
